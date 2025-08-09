@@ -1,0 +1,16 @@
+# WW auto check-in (Podman) - crontab examples
+# Works on macOS/Linux/WSL.
+# Default uses 'podman'. On WSL, set PODMAN_CMD=podman-wsl to use the wrapper.
+
+# One-shot container per run (recommended for simplicity)
+# Mon-Thu at 08:30 (mac/Linux)
+30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in HEADLESS=true IMAGE=ww-check-in:offline-v1 /home/you/ww_check_in/cron/cron_check_in_wsl_podman.sh
+
+# Mon-Thu at 08:30 (WSL with wrapper)
+30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in HEADLESS=true PODMAN_CMD=podman-wsl IMAGE=ww-check-in:offline-v1 /home/you/ww_check_in/cron/cron_check_in_wsl_podman.sh
+
+# Daemon mode: keep background container and exec job inside
+# First, ensure daemon exists (you can run cron with MODE=daemon once at boot)
+# @reboot PROJECT_DIR=/home/you/ww_check_in MODE=daemon /home/you/ww_check_in/cron/cron_check_in_wsl_podman.sh
+# Then schedule job to exec inside container
+# 0 22 * * 1-4 PROJECT_DIR=/home/you/ww_check_in MODE=exec RUN_SCRIPT=ww_check_in.py /home/you/ww_check_in/cron/cron_check_in_wsl_podman.sh

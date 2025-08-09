@@ -1,33 +1,25 @@
-FROM seleniumbase/seleniumbase:latest
+FROM docker.io/seleniumbase/seleniumbase:latest
 
-# Switch to root user to install packages
+# Switch to root user (rootless build compatible)
 USER root
 
-# Set timezone
-RUN ln -snf /usr/share/zoneinfo/Asia/Taipei /etc/localtime && \
-    echo "Asia/Taipei" > /etc/timezone && \
-    dpkg-reconfigure -f noninteractive tzdata
+# Rely on seleniumbase image's bundled Chrome/Chromedriver. No manual driver pinning.
 
-# Copy and run ChromeDriver installation script
-COPY init_chromedriver.sh /usr/local/bin/init_chromedriver.sh
-RUN chmod +x /usr/local/bin/init_chromedriver.sh && \
-    /usr/local/bin/init_chromedriver.sh
-
-# Create app directory
+# App directory
 WORKDIR /app
 
-# Copy requirements and install Python packages
-COPY requirements.txt .
+# Install Python dependencies only (code will be bind-mounted at runtime)
+COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Copy application files
-COPY . .
-
-# Create log directory
+# Optional: create logs dir (also bind-mounted at runtime)
 RUN mkdir -p /app/logs
 
-# Set permissions
-RUN chmod +x /app/ww_check_in.py
+# Set default timezone via env (no dpkg-reconfigure to keep rootless-safe)
+ENV TZ=Asia/Taipei
 
-# Default command
-CMD ["python3", "ww_check_in.py"]
+# Run headless in containers by default (can be overridden via env-file)
+ENV HEADLESS=true
+
+# Default command expects project mounted at /app
+# CMD ["python3", "ww_check_in.py"]
