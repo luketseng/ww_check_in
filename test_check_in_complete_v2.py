@@ -89,9 +89,11 @@ def test_check_in(punch_type=None):
             return False
 
         username_field = wait.until(EC.presence_of_element_located((By.ID, "userid")))
-        username_field.clear(); username_field.send_keys(username)
+        username_field.clear()
+        username_field.send_keys(username)
         password_field = driver.find_element(By.ID, "pwd")
-        password_field.clear(); password_field.send_keys(password)
+        password_field.clear()
+        password_field.send_keys(password)
         driver.find_element(By.NAME, "Submit").click()
         time.sleep(3)
 
@@ -128,9 +130,15 @@ def test_check_in(punch_type=None):
                 # Direct role-link node with steplabel
                 (By.XPATH, "//div[@role='link' and @steplabel='線上打卡']"),
                 # Step button container that contains the target label text
-                (By.XPATH, "//div[contains(@id,'PTGP_STEP_DVW_PTGP_STEP_BTN_GB')][.//span[normalize-space()='線上打卡']]"),
+                (
+                    By.XPATH,
+                    "//div[contains(@id,'PTGP_STEP_DVW_PTGP_STEP_BTN_GB')][.//span[normalize-space()='線上打卡']]",
+                ),
                 # From known label id climb to clickable container
-                (By.XPATH, "//*[@id='PTGP_STEP_DVW_PTGP_STEP_LABEL$3']/ancestor::div[contains(@id,'PTGP_STEP_DVW_PTGP_STEP_BTN_GB')]")
+                (
+                    By.XPATH,
+                    "//*[@id='PTGP_STEP_DVW_PTGP_STEP_LABEL$3']/ancestor::div[contains(@id,'PTGP_STEP_DVW_PTGP_STEP_BTN_GB')]",
+                ),
             ]
 
             online_step = None
@@ -219,7 +227,9 @@ def test_check_in(punch_type=None):
                 target_option = punch_type
             else:
                 current_hour = datetime.datetime.now().time().hour
-                target_option = "Time-In" if 8 <= current_hour < 12 else ("Time-Out" if 17 <= current_hour < 23 else "Time-In")
+                target_option = (
+                    "Time-In" if 8 <= current_hour < 12 else ("Time-Out" if 17 <= current_hour < 23 else "Time-In")
+                )
 
             logger.info(f"Selecting: {target_option}")
             select.select_by_visible_text(target_option)
@@ -227,7 +237,7 @@ def test_check_in(punch_type=None):
             # Save button
             save_button_selectors = [
                 (By.XPATH, "//input[contains(@id,'TL_LINK_WRK_TL_SAVE_PB') or @value='輸入打卡' or @value='Save']"),
-                (By.XPATH, "//button[contains(text(),'輸入打卡') or contains(text(),'Save')]")
+                (By.XPATH, "//button[contains(text(),'輸入打卡') or contains(text(),'Save')]"),
             ]
             save_button = find_dynamic_element(driver, wait, save_button_selectors, "save button")
             if save_button is None:
@@ -235,7 +245,7 @@ def test_check_in(punch_type=None):
                 return False
 
             # Uncomment to actually click
-            robust_click(driver, save_button)
+            # robust_click(driver, save_button)
             logger.info("Simulation complete (no actual click).")
 
             driver.switch_to.default_content()
@@ -262,6 +272,7 @@ def test_check_in(punch_type=None):
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1:
         punch_type = sys.argv[1]
         if punch_type not in ["Time-In", "Time-Out"]:
@@ -271,5 +282,3 @@ if __name__ == "__main__":
     else:
         ok = test_check_in()
     sys.exit(0 if ok else 1)
-
-

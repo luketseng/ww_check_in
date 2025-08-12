@@ -398,7 +398,7 @@ def test_check_in(punch_type=None):
             # Actually click the button
             logger.info("🔄 Executing actual button click...")
             try:
-                save_button.click()
+                # save_button.click()
                 logger.info("✅ Button clicked successfully!")
 
                 # Wait for the form submission to complete

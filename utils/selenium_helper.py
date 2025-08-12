@@ -21,6 +21,7 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from dotenv import load_dotenv
+from utils.config import get_config_value
 from webdriver_manager.chrome import ChromeDriverManager
 
 
@@ -52,7 +53,7 @@ class SeleniumHelper:
             chrome_options.add_argument("--disable-dev-shm-usage")
             chrome_options.add_argument("--disable-gpu")
             chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-            chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"]) 
+            chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             chrome_options.add_experimental_option("useAutomationExtension", False)
             chrome_options.add_argument("--window-size=1440,900")
 
@@ -61,8 +62,8 @@ class SeleniumHelper:
             if chrome_binary and os.path.exists(chrome_binary):
                 chrome_options.binary_location = chrome_binary
 
-            # Headless control via env
-            if os.getenv("HEADLESS", "false").lower() == "true":
+            # Headless control via config (env/.env with precedence)
+            if str(get_config_value("HEADLESS", "false")).lower() == "true":
                 # Use the newer headless mode when available
                 chrome_options.add_argument("--headless=new")
 
@@ -70,14 +71,16 @@ class SeleniumHelper:
             driver_path = self._select_best_chromedriver()
 
             # If not found or mismatch, optionally use webdriver-manager
-            use_wdm = os.getenv("USE_WEBDRIVER_MANAGER", "true").lower() == "true"
+            use_wdm = str(get_config_value("USE_WEBDRIVER_MANAGER", "true")).lower() == "true"
             chrome_major = self._detect_chrome_major()
             drv_major = self._get_major_version_from_path(driver_path) if driver_path else None
             mismatch = chrome_major is not None and drv_major is not None and chrome_major != drv_major
 
             if (driver_path is None or not os.path.exists(driver_path) or mismatch) and use_wdm:
                 logger.info(
-                    f"Preparing driver via webdriver-manager (found={bool(driver_path)}, mismatch={mismatch})"
+                    "Preparing driver via webdriver-manager (found=%s, mismatch=%s)",
+                    bool(driver_path),
+                    mismatch,
                 )
                 try:
                     # Let webdriver-manager auto-detect proper driver
@@ -101,8 +104,8 @@ class SeleniumHelper:
 
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
 
-            implicit_wait = int(os.getenv("IMPLICIT_WAIT", "10"))
-            page_load_timeout = int(os.getenv("PAGE_LOAD_TIMEOUT", "30"))
+            implicit_wait = int(str(get_config_value("IMPLICIT_WAIT", "10")))
+            page_load_timeout = int(str(get_config_value("PAGE_LOAD_TIMEOUT", "30")))
             self.driver.implicitly_wait(implicit_wait)
             self.driver.set_page_load_timeout(page_load_timeout)
             self.wait = WebDriverWait(self.driver, implicit_wait)
@@ -208,11 +211,9 @@ class SeleniumHelper:
 
     def find_element(self, by: By, value: str, timeout: Optional[int] = None):
         """Find an element with explicit wait."""
-        wait_time = timeout or int(os.getenv("IMPLICIT_WAIT", "10"))
+        wait_time = timeout or int(str(get_config_value("IMPLICIT_WAIT", "10")))
         try:
-            return WebDriverWait(self.driver, wait_time).until(
-                EC.presence_of_element_located((by, value))
-            )
+            return WebDriverWait(self.driver, wait_time).until(EC.presence_of_element_located((by, value)))
         except TimeoutException:
             logger.error(f"Element not found within {wait_time}s: {by}={value}")
             raise
@@ -230,9 +231,10 @@ class SeleniumHelper:
             for by, locator in selectors:
                 try:
                     logger.info(f"Trying {element_name} with {by}: {locator}")
-                    element = WebDriverWait(self.driver, int(os.getenv("IMPLICIT_WAIT", "10"))).until(
-                        condition((by, locator))
-                    )
+                    element = WebDriverWait(
+                        self.driver,
+                        int(str(get_config_value("IMPLICIT_WAIT", "10"))),
+                    ).until(condition((by, locator)))
                     logger.info(f"✅ Found {element_name} using {by}: {locator}")
                     return element
                 except Exception as e:
@@ -257,6 +259,7 @@ class SeleniumHelper:
 
     def wait_for_ajax_and_ready(self, timeout: int = 10) -> None:
         """Wait for jQuery ajax (if present) and document ready state complete."""
+
         def ajax_complete(driver):
             try:
                 jquery_exists = driver.execute_script("return typeof jQuery !== 'undefined'")
@@ -296,9 +299,11 @@ class SeleniumHelper:
         self.wait_for_body()
 
         user_el = self.find_element(By.ID, "userid")
-        user_el.clear(); user_el.send_keys(username)
+        user_el.clear()
+        user_el.send_keys(username)
         pwd_el = self.find_element(By.ID, "pwd")
-        pwd_el.clear(); pwd_el.send_keys(password)
+        pwd_el.clear()
+        pwd_el.send_keys(password)
         self.find_element(By.NAME, "Submit").click()
 
         time.sleep(2)
@@ -306,9 +311,10 @@ class SeleniumHelper:
 
     def click_by_id(self, element_id: str, sleep_after: float = 2.0) -> None:
         """Click an element that is expected to be clickable by id."""
-        el = WebDriverWait(self.driver, int(os.getenv("IMPLICIT_WAIT", "10"))).until(
-            EC.element_to_be_clickable((By.ID, element_id))
-        )
+        el = WebDriverWait(
+            self.driver,
+            int(str(get_config_value("IMPLICIT_WAIT", "10"))),
+        ).until(EC.element_to_be_clickable((By.ID, element_id)))
         self.robust_click(el)
         time.sleep(sleep_after)
 
@@ -321,9 +327,16 @@ class SeleniumHelper:
             # Direct role-link with steplabel
             (By.XPATH, "//div[@role='link' and @steplabel='線上打卡']"),
             # Container that includes target label text
-            (By.XPATH, "//div[contains(@id,'PTGP_STEP_DVW_PTGP_STEP_BTN_GB')][.//span[normalize-space()='線上打卡']]"),
+            (
+                By.XPATH,
+                "//div[contains(@id,'PTGP_STEP_DVW_PTGP_STEP_BTN_GB')][.//span[normalize-space()='線上打卡']]",
+            ),
             # From label id to container
-            (By.XPATH, "//*[@id='PTGP_STEP_DVW_PTGP_STEP_LABEL$3']/ancestor::div[contains(@id,'PTGP_STEP_DVW_PTGP_STEP_BTN_GB')]")
+            (
+                By.XPATH,
+                "//*[@id='PTGP_STEP_DVW_PTGP_STEP_LABEL$3']/ancestor::div[contains(@id,'PTGP_STEP_DVW_PTGP_"
+                "STEP_BTN_GB')]",
+            ),
         ]
 
         node = self.find_dynamic_element(step_selectors, "online check-in step")
@@ -333,14 +346,15 @@ class SeleniumHelper:
         # If the container isn't the clickable node, try inner role=link
         try:
             if node.get_attribute("role") != "link":
-                node = node.find_element(By.XPATH, ".//div[@role='link']")
+                locator = (By.XPATH, ".//div[@role='link']")
+                node = node.find_element(*locator)
         except Exception:
             pass
 
         if not self.robust_click(node):
             href = node.get_attribute("href")
             if href:
-                logger.info(f"Fallback navigating to href: {href}")
+                logger.info("Fallback navigating to href: %s", href)
                 self.navigate_to(href)
             else:
                 raise RuntimeError("Failed to click '線上打卡'")
@@ -391,7 +405,7 @@ class SeleniumHelper:
         btn = self.find_dynamic_element(
             selectors=[
                 (By.XPATH, "//input[contains(@id,'TL_LINK_WRK_TL_SAVE_PB') or @value='輸入打卡' or @value='Save']"),
-                (By.XPATH, "//button[contains(text(),'輸入打卡') or contains(text(),'Save')]")
+                (By.XPATH, "//button[contains(text(),'輸入打卡') or contains(text(),'Save')]"),
             ],
             element_name="save button",
             condition=EC.element_to_be_clickable,
@@ -401,3 +415,139 @@ class SeleniumHelper:
         if not self.robust_click(btn):
             raise RuntimeError("Failed to click save button")
         logger.info("Clicked save button")
+
+    def handle_duplicate_clockin_popup(self, timeout: int = 5) -> bool:
+        """
+        Detect and handle duplicate clock-in confirmation popup.
+
+        This function checks if a duplicate clock-in popup appears and clicks the
+        confirmation button if found. The popup typically appears when trying to
+        clock in/out with the same type as the previous entry.
+
+        Args:
+            timeout (int): Maximum time to wait for popup detection in seconds
+
+        Returns:
+            bool: True if popup was found and handled, False if no popup detected
+        """
+        try:
+            # Switch back to default content first to detect modal popup
+            self.switch_to_default()
+
+            # Define selectors for the duplicate clock-in popup elements
+            popup_selectors: List[Selector] = [
+                # Modal container that contains the duplicate message
+                (By.CSS_SELECTOR, "div[role='alertdialog'][aria-modal='true']"),
+                (By.ID, "ptModTable_0"),
+                (By.CSS_SELECTOR, ".ps_modal_container.ps_popup-msg"),
+            ]
+
+            # Define selectors for the confirmation button
+            confirm_button_selectors: List[Selector] = [
+                (By.ID, "#ICOK"),
+                (By.CSS_SELECTOR, "input[id='#ICOK'][value='確定']"),
+                (By.CSS_SELECTOR, "input.PSPUSHBUTTONTBOK[value='確定']"),
+                (By.XPATH, "//input[@type='button' and @value='確定' and contains(@id, 'ICOK')]"),
+            ]
+
+            logger.info("Checking for duplicate clock-in popup...")
+
+            # Try to detect the popup modal
+            popup_element = None
+            try:
+                popup_element = WebDriverWait(self.driver, timeout).until(
+                    EC.any_of(*[EC.presence_of_element_located(selector) for selector in popup_selectors])
+                )
+                logger.info("Duplicate clock-in popup detected")
+            except TimeoutException:
+                logger.info("No duplicate clock-in popup found within timeout")
+                return False
+
+            # If popup is found, check if it contains duplicate clock-in message
+            if popup_element:
+                try:
+                    # Try to obtain visible text from popup
+                    popup_text = popup_element.text.strip()
+                    if not popup_text:
+                        try:
+                            popup_text = popup_element.find_element(By.CSS_SELECTOR, ".popupText").text.strip()
+                        except Exception:
+                            pass
+
+                    # Look for specific text patterns that indicate duplicate clock-in
+                    duplicate_indicators = [
+                        "最近的打卡",  # "Recent clock-in"
+                        "也是",  # "is also"
+                        "打卡",  # "clock-in"
+                        "選取「確定」",  # "Select 'Confirm'"
+                    ]
+
+                    is_duplicate_popup = any(indicator in popup_text for indicator in duplicate_indicators)
+
+                    if is_duplicate_popup:
+                        logger.info(f"Duplicate clock-in popup message: {popup_text}")
+                    else:
+                        # First-time or normal success message
+                        logger.info(popup_text)
+
+                except Exception as e:
+                    logger.warning(f"Could not read popup text, proceeding with confirmation: {e}")
+
+            # Try to find and click the confirmation button
+            confirm_button = self.find_dynamic_element(
+                selectors=confirm_button_selectors,
+                element_name="duplicate clock-in confirmation button",
+                max_retries=2,
+                condition=EC.element_to_be_clickable,
+            )
+
+            if confirm_button is None:
+                logger.info("No confirmation button found - this might be the first clock-in attempt")
+                return False
+
+            # Click the confirmation button
+            if self.robust_click(confirm_button):
+                logger.info("Successfully clicked confirmation button for duplicate clock-in")
+                time.sleep(3)  # Wait a moment for the popup to close
+
+                # Check for any subsequent popup or message
+                try:
+                    # Look for any new popup or alert that might appear
+                    subsequent_popup = WebDriverWait(self.driver, 3).until(
+                        EC.any_of(
+                            EC.presence_of_element_located(
+                                (By.CSS_SELECTOR, "div[role='alertdialog'][aria-modal='true']")
+                            ),
+                            EC.presence_of_element_located((By.ID, "ptModTable_0")),
+                            EC.presence_of_element_located((By.CSS_SELECTOR, ".ps_modal_container")),
+                        )
+                    )
+
+                    # Display the message from the subsequent popup
+                    try:
+                        popup_message = subsequent_popup.text.strip()
+                        if popup_message:
+                            logger.info(f"Subsequent popup appeared with message: {popup_message}")
+                        else:
+                            logger.info("Subsequent popup appeared but no readable message found")
+                    except Exception:
+                        logger.info("Subsequent popup appeared")
+
+                except TimeoutException:
+                    logger.info("No subsequent popup appeared after confirmation")
+                except Exception as e:
+                    logger.debug(f"Error checking for subsequent popup: {e}")
+
+                return True
+            else:
+                logger.error("Failed to click confirmation button")
+                return False
+
+        except Exception as e:
+            logger.error(f"Error handling duplicate clock-in popup: {e}")
+            return False
+
+        finally:
+            # Ensure we're back in the appropriate context
+            # Note: Caller should handle switching back to iframe if needed
+            pass

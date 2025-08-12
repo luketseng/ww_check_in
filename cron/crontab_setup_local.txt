@@ -5,12 +5,19 @@
 # Example environment overrides: PROJECT_DIR, RUN_SCRIPT, HEADLESS
 
 # Example: One-time check-in (Aug 7 at 08:30)
-# 30 8 7 8 * PROJECT_DIR=/home/you/ww_check_in HEADLESS=true /home/you/ww_check_in/cron_check_in_local.sh
+# 30 8 7 8 * PROJECT_DIR=/home/you/ww_check_in HEADLESS=true /home/you/ww_check_in/cron/cron_check_in_local.sh check-in
 
-# Example: Mon-Thu check-in at 08:30
-30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in HEADLESS=true /home/you/ww_check_in/cron_check_in_local.sh
+# Example: Mon-Thu check-in at 08:30 (explicit check-in)
+# 30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in HEADLESS=true /home/you/ww_check_in/cron/cron_check_in_local.sh check-in
 
-# Example: Mon-Thu check-out at 22:00 (switch to a different entry if needed)
-# 0 22 * * 1-4 PROJECT_DIR=/home/you/ww_check_in HEADLESS=true RUN_SCRIPT=test_check_in_complete_v2.py /home/you/ww_check_in/cron_check_in_local.sh
+# Example: Mon-Thu check-out at 22:00
+# 0 22 * * 1-4 PROJECT_DIR=/home/you/ww_check_in HEADLESS=true /home/you/ww_check_in/cron/cron_check_in_local.sh check-out
+
+# Prefer .env over environment (recommended):
+# 30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in PREFER_DOTENV=true /home/you/ww_check_in/cron/cron_check_in_local.sh check-in
+30 8 * * 1-4 /Users/zane/git/ww_check_in/cron/cron_check_in_local.sh
+
+# Use custom entry script (rare):
+# 30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in RUN_SCRIPT=test_check_in_complete_v2.py /home/you/ww_check_in/cron/cron_check_in_local.sh
 
 
