@@ -129,9 +129,10 @@ def main() -> None:
         logger.info("Step 5: Iframe and form")
         helper.switch_to_clock_iframe()
         helper.select_punch_type(target_punch)
-        # Randomize submit time between 0-600 seconds
-        random_delay_seconds = random.randint(0, 600)
-        logger.info(f"Random delay before click save button: {random_delay_seconds}s")
+        # Randomize submit time between 60-600 seconds (in 60s intervals)
+        random_delay_minutes = random.randint(1, 10)  # 1-10 minutes
+        random_delay_seconds = random_delay_minutes * 60
+        logger.info(f"Random delay before click save button: {random_delay_minutes}m({random_delay_seconds}s)")
         time.sleep(random_delay_seconds)
         # logger.info("Disabled auto-submit button for temporary use")
         helper.click_save()
