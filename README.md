@@ -73,9 +73,9 @@ For WSL, replace `podman` with `podman-wsl`.
   - `setup_env/setup_linux_local.sh` installs Python deps (and chromedriver where possible).
   - Then run locally:
     ```bash
-HEADLESS=true python3 ww_check_in.py
-# or
-HEADLESS=true python3 test_check_in_complete_v2.py
+    HEADLESS=true python3 ww_check_in.py
+    or
+    HEADLESS=true python3 test_check_in_complete_v2.py
     ```
 
 - Podman:
@@ -90,7 +90,7 @@ HEADLESS=true python3 test_check_in_complete_v2.py
   - Examples: `cron/crontab_setup_local.txt`
   - Sample (Mon–Thu at 08:30):
     ```cron
-30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in HEADLESS=true /home/you/ww_check_in/cron/cron_check_in_local.sh
+    30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in HEADLESS=true /home/you/ww_check_in/cron/cron_check_in_local.sh
     ```
 
 - Podman cron:
@@ -102,7 +102,7 @@ HEADLESS=true python3 test_check_in_complete_v2.py
     ```
   - One-shot example (WSL with wrapper):
     ```cron
-30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in HEADLESS=true PODMAN_CMD=podman-wsl IMAGE=ww-check-in:offline-v1 /home/you/ww_check_in/cron/cron_check_in_podman.sh
+    30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in HEADLESS=true PODMAN_CMD=podman-wsl IMAGE=ww-check-in:offline-v1 /home/you/ww_check_in/cron/cron_check_in_podman.sh
     ```
   - Daemon mode: ensure container exists at boot, then exec jobs inside it (see file for details).
 
