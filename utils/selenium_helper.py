@@ -67,16 +67,29 @@ class SeleniumHelper:
                 # Use the newer headless mode when available
                 chrome_options.add_argument("--headless=new")
 
-            # Resolve chromedriver path preferring version match with Chrome
+            # Resolve chromedriver path preferring local/system installs
             driver_path = self._select_best_chromedriver()
+
+            # If we explicitly selected a driver via env, system which, or Homebrew path, disable WDM fallback
+            which_driver_path = shutil.which("chromedriver")
+            forced_selected = (
+                bool(os.getenv("CHROMEDRIVER_PATH"))
+                or (driver_path == which_driver_path and driver_path is not None)
+                or (driver_path == "/opt/homebrew/bin/chromedriver")
+            )
 
             # If not found or mismatch, optionally use webdriver-manager
             use_wdm = str(get_config_value("USE_WEBDRIVER_MANAGER", "true")).lower() == "true"
+            if forced_selected:
+                use_wdm = False
+
             chrome_major = self._detect_chrome_major()
             drv_major = self._get_major_version_from_path(driver_path) if driver_path else None
             mismatch = chrome_major is not None and drv_major is not None and chrome_major != drv_major
 
-            if (driver_path is None or not os.path.exists(driver_path) or mismatch) and use_wdm:
+            if (
+                driver_path is None or not os.path.exists(driver_path) or (mismatch and not forced_selected)
+            ) and use_wdm:
                 logger.info(
                     "Preparing driver via webdriver-manager (found=%s, mismatch=%s)",
                     bool(driver_path),
@@ -170,6 +183,18 @@ class SeleniumHelper:
         if explicit and os.path.exists(explicit):
             logger.info(f"Using CHROMEDRIVER_PATH from env: {explicit}")
             return explicit
+
+        # 1.1) Prefer system default via `which chromedriver` if available
+        which_driver = shutil.which("chromedriver")
+        if which_driver and os.path.exists(which_driver):
+            logger.info(f"Using chromedriver from PATH: {which_driver}")
+            return which_driver
+
+        # 1.2) Prefer Homebrew path on Apple Silicon/macOS if present
+        homebrew_path = "/opt/homebrew/bin/chromedriver"
+        if os.path.exists(homebrew_path):
+            logger.info(f"Using Homebrew chromedriver at: {homebrew_path}")
+            return homebrew_path
 
         # 2) Detect Chrome major version
         chrome_major = self._detect_chrome_major()

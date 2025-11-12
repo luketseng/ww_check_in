@@ -28,6 +28,10 @@ LOG_FILE="$PROJECT_DIR/logs/cron_check_in_local_$(date +%Y%m%d_%H%M%S).log"
 # Prefer .env values over inherited environment unless explicitly disabled
 export PREFER_DOTENV="${PREFER_DOTENV:-true}"
 
+# Chrome and ChromeDriver configuration
+export CHROME_BINARY="${CHROME_BINARY:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
+export USE_WEBDRIVER_MANAGER="${USE_WEBDRIVER_MANAGER:-true}"
+
 # Optional punch argument can be provided via env PUNCH or first CLI arg
 PUNCH="${PUNCH:-${1:-}}"
 
