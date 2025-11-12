@@ -15,7 +15,9 @@
 
 # Prefer .env over environment (recommended):
 # 30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in PREFER_DOTENV=true /home/you/ww_check_in/cron/cron_check_in_local.sh check-in
-30 8 * * 1-4 /Users/zane/git/ww_check_in/cron/cron_check_in_local.sh
+30 8 * * 1-4 $HOME/git/ww_check_in/cron/cron_check_in_local.sh
+20 19 * * 1,4 $HOME/git/ww_check_in/cron/cron_check_in_local.sh
+0 2 * * * find $HOME/git/ww_check_in/logs -name "*.log" -type f -mtime +5 -delete
 
 # Use custom entry script (rare):
 # 30 8 * * 1-4 PROJECT_DIR=/home/you/ww_check_in RUN_SCRIPT=test_check_in_complete_v2.py /home/you/ww_check_in/cron/cron_check_in_local.sh
